@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Object Detection - GitHub Pages</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- ONNX.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.18.0/dist/ort.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 YOLO Object Detection</h1>
+        <p class="subtitle">ตรวจจับวัตถุด้วย AI ในเบราว์เซอร์ของคุณ</p>
+
+        <!-- ส่วนเลือกโหมด -->
+        <div class="mode-selection" id="mode-selection">
+            <div class="mode-buttons">
+                <button onclick="switchMode('upload')" class="mode-btn active" id="upload-mode-btn">
+                    📸 อัปโหลดรูปภาพ
+                </button>
+                <button onclick="switchMode('camera')" class="mode-btn" id="camera-mode-btn">
+                    📹 เปิดกล้อง
+                </button>
+            </div>
+        </div>
+
+        <!-- ส่วนอัปโหลดรูปภาพ -->
+        <div class="upload-section" id="upload-section">
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">
+                <h3>อัปโหลดรูปภาพเพื่อตรวจจับวัตถุ</h3>
+                <p>ลากไฟล์รูปภาพมาที่นี่ หรือคลิกเพื่อเลือกไฟล์</p>
+            </div>
+            <input type="file" id="file-input" accept="image/*" style="display: none;">
+            <button onclick="document.getElementById('file-input').click()" class="upload-btn">
+                เลือกไฟล์รูปภาพ
+            </button>
+        </div>
+
+        <!-- ส่วนกล้อง -->
+        <div class="camera-section" id="camera-section" style="display: none;">
+            <div class="camera-container">
+                <video id="camera-video" autoplay playsinline muted></video>
+                <canvas id="camera-canvas" style="display: none;"></canvas>
+            </div>
+            <div class="camera-controls">
+                <button onclick="startCamera()" class="camera-btn" id="start-camera-btn">
+                    ▶️ เริ่มกล้อง
+                </button>
+                <button onclick="stopCamera()" class="camera-btn" id="stop-camera-btn" style="display: none;">
+                    ⏹️ หยุดกล้อง
+                </button>
+                <button onclick="captureFrame()" class="camera-btn" id="capture-btn" style="display: none;">
+                    📸 ถ่ายภาพ
+                </button>
+            </div>
+        </div>
+
+        <!-- ส่วนแสดงผลลัพธ์ -->
+        <div class="result-section" id="result-section" style="display: none;">
+            <h3>ผลการตรวจจับวัตถุ</h3>
+
+            <div class="image-container">
+                <div class="image-wrapper">
+                    <canvas id="original-canvas" style="display: none;"></canvas>
+                    <canvas id="result-canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- สถิติ -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="objects-count">0</div>
+                    <div class="stat-label">วัตถุที่ตรวจพบ</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="avg-confidence">0%</div>
+                    <div class="stat-label">ความมั่นใจเฉลี่ย</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="processing-time">0ms</div>
+                    <div class="stat-label">เวลาประมวลผล</div>
+                </div>
+            </div>
+
+            <!-- ปุ่มควบคุม -->
+            <div class="controls">
+                <button onclick="detectAgain()" class="btn-primary">🔄 ตรวจจับใหม่</button>
+                <button onclick="clearResult()" class="btn-secondary">🗑️ ล้างผลลัพธ์</button>
+                <button onclick="downloadResult()" class="btn-success">💾 ดาวน์โหลดผลลัพธ์</button>
+            </div>
+        </div>
+
+        <!-- การตั้งค่า -->
+        <div class="settings">
+            <h3>⚙️ การตั้งค่า</h3>
+            <div class="setting-group">
+                <label for="confidence-slider">🎯 ความมั่นใจในการตรวจจับ</label>
+                <input type="range" id="confidence-slider" min="0.1" max="1.0" step="0.05" value="0.5">
+                <div class="value-display" id="confidence-value">50%</div>
+            </div>
+
+            <div class="setting-group">
+                <label for="iou-slider">🔗 IoU Threshold</label>
+                <input type="range" id="iou-slider" min="0.1" max="0.9" step="0.05" value="0.45">
+                <div class="value-display" id="iou-value">45%</div>
+            </div>
+        </div>
+
+        <!-- สถานะ -->
+        <div class="status" id="status">
+            กำลังโหลดโมเดล YOLO...
+        </div>
+
+        <!-- ข้อมูล API -->
+        <div class="api-info">
+            <h3>💡 วิธีการทำงาน</h3>
+            <ul>
+                <li>โมเดล AI ทำงานในเบราว์เซอร์ของคุณ (ไม่ส่งข้อมูลไปที่เซิร์ฟเวอร์)</li>
+                <li>รองรับรูปภาพ JPG, PNG, WebP และอื่นๆ</li>
+                <li>ใช้โมเดล YOLO ที่แปลงเป็น ONNX สำหรับประสิทธิภาพสูงสุด</li>
+                <li>ทำงานได้ทั้งบนคอมพิวเตอร์และมือถือ</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
