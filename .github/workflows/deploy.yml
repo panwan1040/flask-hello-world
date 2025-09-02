@@ -9,30 +9,24 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
 
     steps:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
       with:
-        node-version: '18'
-
-    - name: Install dependencies
-      run: |
-        npm install -g http-server
-        # ไม่ต้องติดตั้ง dependencies อื่นๆ เพราะเราใช้ static files
-
-    - name: Build (ถ้ามี)
-      run: |
-        # ถ้ามี build process ให้ใส่ที่นี่
-        echo "Static files ready for deployment"
+        path: './'
 
     - name: Deploy to GitHub Pages
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-      uses: peaceiris/actions-gh-pages@v3
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./
-        cname: # ถ้ามี custom domain ให้ใส่ที่นี่
+      id: deployment
+      uses: actions/deploy-pages@v4
